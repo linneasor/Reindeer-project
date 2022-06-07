@@ -269,13 +269,12 @@ g <- ggplot(dfweather, mapping = aes(x=date_time, y=AirTemp)) +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),
-        aspect.ratio = 1,
+        aspect.ratio = 0.25,
         plot.title = element_text(hjust = 0.5, size = 12)) +
   ggtitle("Air temperature") +
-  scale_x_datetime(date_breaks = "3 day", date_labels = '%d.%m') +
-  g + coord_fixed(ratio = 10)
+  scale_x_datetime(date_breaks = "3 day", date_labels = '%d.%m')
 
-  ggsave(file="AirTemp.png", width=10, height=4, dpi=300)
+  ggsave(file="AirTemp.png", g, width=10, height=3, dpi=300)
  
 
   
