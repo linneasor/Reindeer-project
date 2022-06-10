@@ -7,6 +7,9 @@ library(dplyr)
 library(lubridate)
 library(RColorBrewer)
 library(irr)
+library(extrafont)
+
+loadfonts(device = "win")
 
 df <- read.csv("Data/Scan_sampling_data_2022.csv")
 dfweather <- read.csv("Data/Weather_data_per_hour_2022.csv")
@@ -25,8 +28,6 @@ names(dfweather) [4] <- "SnowDepth"
 names(dfweather) [5] <- "Precipitation"
 names(dfweather) [6] <- "AirTemp"
 names(dfweather) [7] <- "MeanWindSpeed"
-
-dfweather$Date = as.Date(dfweather$date_time)
 
 # Filtering and subsetting data -------------------------------------------
 ##Filt. by sex----
@@ -284,6 +285,28 @@ probotherdf <- data.frame(Activity = c("Foraging", "Resting", "Ruminating",
                                      0,
                                      0.007532957))
 
+##Grouping activity data----
+
+FrExDa <- FrExDa %>% mutate(Løsning=recode(Løsning, A="Guro",B="Marie",C="Hanne",D="Linn",E="Anne",Ff="-Frida"),
+                            Frass = recode(Frass, UF = "Uten frass", MF = "Med frass"))
+
+df2 <- df2 %>% mutate(Sex=recode(Sex, 0="Female", 1="Male",99="Calf/yearling"))
+
+# specify the order in which you want your new treatment names to appear in your graphs
+loslevels <- c("Guro", "Marie", "Hanne", "Linn","Anne","Frida")
+frasslevels <- c("Uten frass","Med frass")
+FrExDa$Losning<-factor(FrExDa$Losning, levels = loslevels)
+FrExDa$Frass<-factor(FrExDa$Frass, levels = frasslevels)
+
+
+
+df %>%
+  group_by(genre)
+
+Activity = c("Foraging", "Resting", "Ruminating",
+            "Walking", "Displaying", "Other")
+Groups = c("Female", "Male", "Calf/yearling", "Total")
+
 # Calculating mean weather ------------------------------------------------
 #Mean weather + standard deviation (should be set to only include 19.03-05.05)
 meanweather <- dfweather %>%
@@ -299,69 +322,84 @@ meanweather <- dfweather %>%
 
 # Plotting weather data ---------------------------------------------------
 #Air temperature
-lims <- as.POSIXct(strptime(c("2022-03-19 14:00", "2022-05-05 15:00"), 
-                            format = "%d.%m.%Y %H:%M"))
+lims <- as.POSIXct(strptime(c("19.03.2022", "05.05.2022"), 
+                            format = "%d.%m.%Y"))
 
 at <- ggplot(dfweather, mapping = aes(x=date_time, y=AirTemp)) +
-  geom_line(color="#6bb0c7", size=0.9) +
-  #labs (x= "Time") +
+  geom_line(color="#6bb0c7", size=0.8) +
   theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
         axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
         axis.title.x=element_blank(),
+        axis.title.y=element_text(size = 13),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),
-        aspect.ratio = 0.20,
-        plot.title = element_text(hjust = 0.5, size = 12)) +
-  ggtitle("Air temperature") +
+        aspect.ratio = 0.25,
+        plot.title = element_text(hjust = 0.5, size = 16)) +
+  ggtitle("Air temperature (1 h)") +
   ylab("Temperature (°C)") +
-  scale_x_datetime(date_breaks = "3 day", date_labels = '%d.%m',limits = c(
-                     as.POSIXct("2022-03-19 14:00:00 UTC"),
-                     as.POSIXct("2022-05-05 15:00:00 UTC")))
-  
-  ggsave(file="AirTemp.png", at, width=10, height=3, dpi=300)
+  scale_x_datetime(limits = lims, date_breaks = "3 day", date_labels = '%d.%m', expand=c(0.06, 0))
+
+ggsave(file="AirTemp.png", at, width=10, height=3, dpi=300)
  
 #Precipitation
-  p <- ggplot(dfweather, mapping = aes(x=date_time, y=Precipitation)) +
-    geom_line(color="#6bb0c7", size=0.9) +
-    #labs (x= "Time") +
-    theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
-          axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
-          axis.title.x=element_blank(),
-          panel.grid.major = element_blank(), 
-          panel.grid.minor = element_blank(),
-          panel.background = element_blank(),
-          aspect.ratio = 0.20,
-          plot.title = element_text(hjust = 0.5, size = 12)) +
-    ggtitle("Precipitation") +
-    ylab("Temperature (° C)") +
-    scale_x_datetime(date_breaks = "3 day", date_labels = '%d.%m',limits = c(
-      as.POSIXct("2022-03-19 14:00:00 UTC"),
-      as.POSIXct("2022-05-05 15:00:00 UTC")))  
-  
-  ggsave(file="Precipitation.png", p, width=10, height=3, dpi=300)
+p <- ggplot(dfweather, mapping = aes(x=date_time, y=Precipitation)) +
+  geom_line(color="#6bb0c7", size=0.8) +
+  theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.title.x=element_blank(),axis.title.y=element_text(size = 13),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        aspect.ratio = 0.25,
+        plot.title = element_text(hjust = 0.5, size = 16)) +
+  ggtitle("Precipitation (1 h)") +
+  ylab("Precipitation (mm)") +
+  scale_x_datetime(limits = lims, date_breaks = "3 day", date_labels = '%d.%m', expand=c(0.06, 0))
+
+ggsave(file="Precipitation.png", p, width=10, height=3, dpi=300)
+
+#Snow depth
+sd <- ggplot(dfweather, mapping = aes(x=date_time, y=SnowDepth)) +
+  geom_line(color="#6bb0c7", size=0.8) +
+  theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.title.x=element_blank(),axis.title.y=element_text(size = 13),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        aspect.ratio = 0.25,
+        plot.title = element_text(hjust = 0.5, size = 16)) +
+  ggtitle("Snow depth (1 h)") +
+  ylab("Depth (cm)") +
+  scale_x_datetime(limits = lims, date_breaks = "3 day", date_labels = '%d.%m', expand=c(0.06, 0))
+
+ggsave(file="SnowDepth.png", sd, width=10, height=3, dpi=300)
 
 #Wind speed
-  ws <- ggplot(dfweather, mapping = aes(x=date_time, y=MeanWindSpeed)) +
-    geom_line(color="#6bb0c7", size=0.9) +
-    #labs (x= "Time") +
-    theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
-          axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
-          axis.title.x=element_blank(),
-          panel.grid.major = element_blank(), 
-          panel.grid.minor = element_blank(),
-          panel.background = element_blank(),
-          aspect.ratio = 0.20,
-          plot.title = element_text(hjust = 0.5, size = 12)) +
-    ggtitle("Mean wind speed") +
-    ylab("Wind speed (m/s)") +
-    scale_x_datetime(date_breaks = "3 day", date_labels = '%d.%m',limits = c(
-      as.POSIXct("2022-03-19 14:00:00 UTC"),
-      as.POSIXct("2022-05-05 15:00:00 UTC")))  
-  
-  ggsave(file="WindSpeed.png", ws, width=10, height=3, dpi=300)  
+ws <- ggplot(dfweather, mapping = aes(x=date_time, y=MeanWindSpeed)) +
+  geom_line(color="#6bb0c7", size=0.8) +
+  theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.title.x=element_blank(),axis.title.y=element_text(size = 13),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        aspect.ratio = 0.25,
+        plot.title = element_text(hjust = 0.5, size = 16)) +
+  ggtitle("Mean wind speed (1 h)") +
+  ylab("Wind speed (m/s)") +
+  scale_x_datetime(limits = lims, date_breaks = "3 day", date_labels = '%d.%m', expand=c(0.06, 0))
 
-
+ggsave(file="WindSpeed.png", ws, width=10, height=3, dpi=300)
 
 # Plotting activity data --------------------------------------------------
 ##Percentage of time spent on each activity total----
@@ -473,9 +511,13 @@ ggplot(data=probotherdf, aes(x= reorder(Activity, -probability), y=probability,
                     values = c("#6bb0c7", "#659470", "#b36256",
                                "#d9d289", "#4b5e96", "#d67860"))
 
+##Grouped graph percentage----
+
+
+
 ##Percentage active/inactive----
 #Overall data
-ggplot(data=hourlydf, aes(x= reorder(Activity, -probability), y=probability,
+ggplot(data=probdf, aes(x= reorder(Activity, -probability), y=probability,
                         fill = Activity)) +
   geom_bar(stat = "identity")+
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
@@ -492,19 +534,22 @@ ggplot(data=hourlydf, aes(x= reorder(Activity, -probability), y=probability,
   ggtitle("Total") +
   xlab(F) +
   ylab("Percentage of total time") +
-  scale_y_continuous(labels = scales::percent,limits = c(0, 0.6))+
   scale_fill_manual("", 
-                    breaks = c("Foraging", "Resting",
-                               "Ruminating", "Walking",
-                               "Displaying", "Other"),
-                    values = c("#6bb0c7", "#659470", "#b36256",
-                               "#d9d289", "#d67860", "#4b5e96"))
+                    breaks = c("Active", "Inactive"),
+                    values = c("#6bb0c7", "#659470"))
 
 #Female data
 
 #Male data
 
 #Other data
+
+##Activity cycles/periodicity----
+#Plotting data on one specific day, aiming to show the activity cycles in the reindeer.
+#Best to pick a group (or two) that stay visible the entire time, don't go through mergers and were
+#scanned for a long period of time (6 hours+).
+#Showing more than one group for the same period would also say something about the
+#synchrony between the groups.
 
 # Statistical analysis ----------------------------------------------------
 ##Multiple linear regression----
@@ -535,3 +580,38 @@ m7 <- lm(TotalRuminating~Precipitation+AirTemp
          +MeanWindSpeed, data=hourlydf)
 
 summary(m7)
+
+
+
+
+
+#Trying to get striped bars
+ggplot(data=probdf, aes(fill=Condition, y=Level, x=Group, pattern = Condition, 
+                pattern_type = Condition)) +
+  geom_bar_pattern(position="dodge", stat="identity", pattern_fill = "black",
+                   fill = "white", colour = "black", pattern_spacing = 0.01,
+                   pattern_frequency = 5, pattern_angle = 45) +
+  ggpubr::theme_pubr() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  theme(axis.text.x=element_blank(),
+        axis.title.x=element_blank(),
+        axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.ticks.x = element_blank(),
+        aspect.ratio = 1,
+        plot.title = element_text(hjust = 0.5, size = 12)) +
+  ggtitle("Total") +
+  xlab(F) +
+  ylab("Percentage of total time") +
+  scale_y_continuous(labels = scales::percent,limits = c(0, 0.6))+
+  scale_fill_manual("", 
+                    breaks = c("Foraging", "Resting",
+                               "Ruminating", "Walking",
+                               "Displaying", "Other"),
+                    values = c("#6bb0c7", "#659470", "#b36256",
+                               "#d9d289", "#d67860", "#4b5e96")) +
+  scale_pattern_manual(values=c('stripe', 'none')) +
+  scale_pattern_type_manual(values=c(NA, NA))
