@@ -7,12 +7,10 @@ library(dplyr)
 library(lubridate)
 library(RColorBrewer)
 library(irr)
-library(extrafont)
-
-loadfonts(device = "win")
 
 df <- read.csv("Data/Scan_sampling_data_2022.csv")
 dfweather <- read.csv("Data/Weather_data_per_hour_2022.csv")
+activitycycle <- read.csv("Data/Scan_sampling_data_2022_periodicity.csv")
 
 
 # Date/time formatting ----------------------------------------------------
@@ -511,7 +509,7 @@ ggplot(data=probotherdf, aes(x= reorder(Activity, -probability), y=probability,
                     values = c("#6bb0c7", "#659470", "#b36256",
                                "#d9d289", "#4b5e96", "#d67860"))
 
-##Grouped graph percentage----
+##Activity in March vs April/May----
 
 
 
