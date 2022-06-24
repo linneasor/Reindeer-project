@@ -10,7 +10,7 @@ library(irr)
 
 df <- read.csv("Data/Scan_sampling_data_2022.csv")
 dfweather <- read.csv("Data/Weather_data_per_hour_2022.csv")
-activitycycle <- read.csv("Data/Scan_sampling_data_2022_periodicity.csv")
+activitycycle <- read.csv("Data/activity_31.csv")
 
 
 # Date/time formatting ----------------------------------------------------
@@ -27,6 +27,8 @@ names(dfweather) [5] <- "Precipitation"
 names(dfweather) [6] <- "AirTemp"
 names(dfweather) [7] <- "MeanWindSpeed"
 
+activitycycle$Time <- as.POSIXct(activitycycle$Time, "%d.%m.%Y %H:%M", tz = "UTC")
+
 # Filtering and subsetting data -------------------------------------------
 ##Filt. by sex----
 df %>%
@@ -36,8 +38,14 @@ df %>%
 df %>%
   filter(Sex == 99) -> dfother
 
+##Create two new df's by time period----
+#Late winter (March-early April)
+dftp1 <- subset(df, Date < as.Date("2022-04-26"))
+#Polar day (late April-May)
+dftp2 <- subset(df, Date > as.Date("2022-04-01"))
+
 ##Group by hour----
-#All data by hour
+#Overall data by hour
 hourlydf <- df %>%
   mutate(Time = date_time) %>%
   mutate(date_time = ceiling_date(date_time, unit = "hour")) %>%
@@ -53,6 +61,38 @@ hourlydf <- df %>%
 names(hourlydf) <- c("date_time", "HerdID", "TotalForaging", "TotalResting", 
                       "TotalRuminating", "TotalWalking", "TotalDisplaying",
                       "TotalOther")
+#Time period 1 by hour
+hourlytp1df <- dftp1 %>%
+  mutate(Time = date_time) %>%
+  mutate(date_time = ceiling_date(date_time, unit = "hour")) %>%
+  group_by(date_time, HerdID) %>%
+  summarise(`sum(Foraging[Foraging > 0])` = sum(Foraging[Foraging > 0]),
+            `sum(Resting)` = sum(Resting),
+            `sum(Ruminating)` = sum(Ruminating),
+            `sum(Walking)` = sum(Walking),
+            `sum(Displaying)` = sum(Displaying),
+            `sum(Other)` = sum(Other)) %>%
+  ungroup()
+
+names(hourlytp1df) <- c("date_time", "HerdID", "TotalForaging", "TotalResting", 
+                     "TotalRuminating", "TotalWalking", "TotalDisplaying",
+                     "TotalOther")
+#Time period 2 by hour
+hourlytp2df <- dftp2 %>%
+  mutate(Time = date_time) %>%
+  mutate(date_time = ceiling_date(date_time, unit = "hour")) %>%
+  group_by(date_time, HerdID) %>%
+  summarise(`sum(Foraging[Foraging > 0])` = sum(Foraging[Foraging > 0]),
+            `sum(Resting)` = sum(Resting),
+            `sum(Ruminating)` = sum(Ruminating),
+            `sum(Walking)` = sum(Walking),
+            `sum(Displaying)` = sum(Displaying),
+            `sum(Other)` = sum(Other)) %>%
+  ungroup()
+
+names(hourlytp2df) <- c("date_time", "HerdID", "TotalForaging", "TotalResting", 
+                     "TotalRuminating", "TotalWalking", "TotalDisplaying",
+                     "TotalOther")
 
 #Female by hour
 hourlyfemaledf <- dffemale %>%
@@ -105,18 +145,8 @@ names(hourlyotherdf) <- c("date_time", "HerdID", "TotalForaging", "TotalResting"
                            "TotalRuminating", "TotalWalking", "TotalDisplaying",
                            "TotalOther")
 
-#Arrange by time
-#arrmaledf <- maledf %>%
-#  mutate(date_time,
-   #      hour = hour(date_time),         Not in use
-   #      min = minute(date_time),
-   #      sec = second(date_time)) %>%
- # arrange(hour, min, sec)
-  #select(date_time)
-
 
 ##Filt. weather data to only relevant date/times----
-
 #Overall data
 weatherSpecific <- subset(dfweather, subset = date_time %in% c(unique(hourlydf$date_time)))
 
@@ -144,6 +174,16 @@ hourlydf$TotalIndividuals = rowSums(hourlydf
                                             [,c("TotalForaging", "TotalResting", 
                                                 "TotalRuminating","TotalWalking", 
                                                 "TotalDisplaying", "TotalOther")])
+#TP1 data
+hourlytp1df$TotalIndividuals = rowSums(hourlytp1df
+                                    [,c("TotalForaging", "TotalResting", 
+                                        "TotalRuminating","TotalWalking", 
+                                        "TotalDisplaying", "TotalOther")])
+#TP2 data
+hourlytp2df$TotalIndividuals = rowSums(hourlytp2df
+                                    [,c("TotalForaging", "TotalResting", 
+                                        "TotalRuminating","TotalWalking", 
+                                        "TotalDisplaying", "TotalOther")])
 #Female data
 hourlyfemaledf$TotalIndividuals = rowSums(hourlyfemaledf
                                                [,c("TotalForaging", "TotalResting", 
@@ -163,6 +203,15 @@ hourlyotherdf$TotalIndividuals = rowSums(hourlyotherdf
 ##Active/inactive percentage----
 #Overall data
 hourlydf <- hourlydf %>%
+  mutate(TotalActive = (TotalForaging + TotalWalking + TotalDisplaying + TotalOther),
+         TotalInactive = (TotalResting + TotalRuminating))
+
+#TP1
+hourlytp1df <- hourlytp1df %>%
+  mutate(TotalActive = (TotalForaging + TotalWalking + TotalDisplaying + TotalOther),
+         TotalInactive = (TotalResting + TotalRuminating))
+#TP2
+hourlytp2df <- hourlytp2df %>%
   mutate(TotalActive = (TotalForaging + TotalWalking + TotalDisplaying + TotalOther),
          TotalInactive = (TotalResting + TotalRuminating))
 
@@ -207,7 +256,52 @@ probdf <- data.frame(Activity = c("Foraging", "Resting", "Ruminating",
                                    0.008430913,
                                    0.5859485,
                                    0.4140515))
+#TP1 data
+sumTotalIndividualstp1df <- hourlytp1df %>%
+  summarise(`sum(TotalIndividuals)` = sum(TotalIndividuals))
 
+percenthourlytp1df <- hourlytp1df %>%
+  summarise(`sum(TotalForaging)` = sum(TotalForaging)/sumTotalIndividualstp1df,
+            `sum(TotalResting)` = sum(TotalResting)/sumTotalIndividualstp1df,
+            `sum(TotalRuminating)` = sum(TotalRuminating)/sumTotalIndividualstp1df,
+            `sum(TotalWalking)` = sum(TotalWalking)/sumTotalIndividualstp1df,
+            `sum(TotalDisplaying)` = sum(TotalDisplaying)/sumTotalIndividualstp1df,
+            `sum(TotalOther)` = sum(TotalOther)/sumTotalIndividualstp1df,
+            `sum(TotalActive)` = sum(TotalActive)/sumTotalIndividualstp1df,
+            `sum(TotalInactive)` = sum(TotalInactive)/sumTotalIndividualstp1df)%>%
+  ungroup()
+
+probtp1df <- data.frame(Activity = c("Foraging", "Resting", "Ruminating",
+                                  "Walking", "Displaying", "Other"),
+                     probability = c(0.6037859,
+                                     0.2278068,
+                                     0.1279373,
+                                     0.03198433,
+                                     0.001305483,
+                                     0.007180157))
+#TP2 data
+sumTotalIndividualstp2df <- hourlytp2df %>%
+  summarise(`sum(TotalIndividuals)` = sum(TotalIndividuals))
+
+percenthourlytp2df <- hourlytp2df %>%
+  summarise(`sum(TotalForaging)` = sum(TotalForaging)/sumTotalIndividualstp2df,
+            `sum(TotalResting)` = sum(TotalResting)/sumTotalIndividualstp2df,
+            `sum(TotalRuminating)` = sum(TotalRuminating)/sumTotalIndividualstp2df,
+            `sum(TotalWalking)` = sum(TotalWalking)/sumTotalIndividualstp2df,
+            `sum(TotalDisplaying)` = sum(TotalDisplaying)/sumTotalIndividualstp2df,
+            `sum(TotalOther)` = sum(TotalOther)/sumTotalIndividualstp2df,
+            `sum(TotalActive)` = sum(TotalActive)/sumTotalIndividualstp2df,
+            `sum(TotalInactive)` = sum(TotalInactive)/sumTotalIndividualstp2df)%>%
+  ungroup()
+
+probtp2df <- data.frame(Activity = c("Foraging", "Resting", "Ruminating",
+                                  "Walking", "Displaying", "Other"),
+                     probability = c(0.4970782,
+                                     0.2885318,
+                                     0.1581446,
+                                     0.03834916,
+                                     0.008765522,
+                                     0.009130752))
 #Female data
 sumTotalIndividualsfemaledf <- hourlyfemaledf %>%
   summarise(`sum(TotalIndividuals)` = sum(TotalIndividuals))
@@ -406,7 +500,7 @@ ggsave(file="WindSpeed.png", ws, width=10, height=3, dpi=300)
 #                    "#d6954f", "#d67860")
 
 #Overall data
-ggplot(data=probdf, aes(x= reorder(Activity, -probability), y=probability,
+act_t <- ggplot(data=probdf, aes(x= reorder(Activity, -probability), y=probability,
                               fill = Activity)) +
   geom_bar(stat = "identity")+
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
@@ -430,9 +524,10 @@ ggplot(data=probdf, aes(x= reorder(Activity, -probability), y=probability,
                                "Displaying", "Other"),
                     values = c("#6bb0c7", "#659470", "#b36256",
                                "#d9d289", "#d67860", "#4b5e96"))
+ggsave(file="act_t.png", act_t, width=4, height=3.1, dpi=300)
 
 #Female data
-ggplot(data=probfemaledf, aes(x= reorder(Activity, -probability), y=probability,
+act_f <- ggplot(data=probfemaledf, aes(x= reorder(Activity, -probability), y=probability,
                             fill = Activity)) +
   geom_bar(stat = "identity")+
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
@@ -456,9 +551,10 @@ ggplot(data=probfemaledf, aes(x= reorder(Activity, -probability), y=probability,
                                "Displaying", "Other"),
                     values = c("#6bb0c7", "#659470", "#b36256",
                                "#d9d289", "#d67860", "#4b5e96"))
+ggsave(file="act_f.png", act_f, width=4, height=3.1, dpi=300)
 
 #Male data
-ggplot(data=probmaledf, aes(x= reorder(Activity, -probability), y=probability,
+act_m <- ggplot(data=probmaledf, aes(x= reorder(Activity, -probability), y=probability,
                              fill = Activity)) +
   geom_bar(stat = "identity")+
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
@@ -483,8 +579,10 @@ ggplot(data=probmaledf, aes(x= reorder(Activity, -probability), y=probability,
                     values = c("#6bb0c7", "#659470", "#b36256",
                                "#d9d289", "#4b5e96", "#d67860"))
 
+ggsave(file="act_m.png", act_m, width=4, height=3.1, dpi=300)
+
 #Other data
-ggplot(data=probotherdf, aes(x= reorder(Activity, -probability), y=probability,
+act_o <- ggplot(data=probotherdf, aes(x= reorder(Activity, -probability), y=probability,
                              fill = Activity)) +
   geom_bar(stat = "identity")+
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
@@ -509,8 +607,64 @@ ggplot(data=probotherdf, aes(x= reorder(Activity, -probability), y=probability,
                     values = c("#6bb0c7", "#659470", "#b36256",
                                "#d9d289", "#4b5e96", "#d67860"))
 
-##Activity in March vs April/May----
+ggsave(file="act_o.png", act_o, width=4, height=3.1, dpi=300)
 
+##Activity in March vs April/May----
+#TP1
+tp1 <- ggplot(data=probtp1df, aes(x= reorder(Activity, -probability), y=probability,
+                        fill = Activity)) +
+  geom_bar(stat = "identity")+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  theme(axis.text.x=element_blank(),
+        axis.title.x=element_blank(),
+        axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.ticks.x = element_blank(),
+        aspect.ratio = 1,
+        plot.title = element_text(hjust = 0.5, size = 12)) +
+  ggtitle("Late winter") +
+  xlab(F) +
+  ylab("Percentage of total time") +
+  scale_y_continuous(labels = scales::percent,limits = c(0, 0.65))+
+  scale_fill_manual("", 
+                    breaks = c("Foraging", "Resting",
+                               "Ruminating", "Walking",
+                               "Displaying", "Other"),
+                    values = c("#6bb0c7", "#659470", "#b36256",
+                               "#d9d289", "#d67860", "#4b5e96"))
+
+ggsave(file="activity_tp1.png", tp1, width=4, height=3.1, dpi=300)
+
+#TP2
+tp2 <- ggplot(data=probtp2df, aes(x= reorder(Activity, -probability), y=probability,
+                        fill = Activity)) +
+  geom_bar(stat = "identity")+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  theme(axis.text.x=element_blank(),
+        axis.title.x=element_blank(),
+        axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.ticks.x = element_blank(),
+        aspect.ratio = 1,
+        plot.title = element_text(hjust = 0.5, size = 12)) +
+  ggtitle("Polar day") +
+  xlab(F) +
+  ylab("Percentage of total time") +
+  scale_y_continuous(labels = scales::percent,limits = c(0, 0.65))+
+  scale_fill_manual("", 
+                    breaks = c("Foraging", "Resting",
+                               "Ruminating", "Walking",
+                               "Displaying", "Other"),
+                    values = c("#6bb0c7", "#659470", "#b36256",
+                               "#d9d289", "#d67860", "#4b5e96"))
+
+ggsave(file="activity_tp2.png", tp2, width=4, height=3.1, dpi=300)
 
 
 ##Percentage active/inactive----
@@ -548,6 +702,26 @@ ggplot(data=probdf, aes(x= reorder(Activity, -probability), y=probability,
 #scanned for a long period of time (6 hours+).
 #Showing more than one group for the same period would also say something about the
 #synchrony between the groups.
+
+ac <- ggplot(activitycycle, mapping = aes(x=Time, y=Active)) +
+  geom_line(color="#6bb0c7", size=0.8) +
+  theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.title.x=element_blank(),
+        axis.title.y=element_text(size = 13),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        aspect.ratio = 0.25,
+        plot.title = element_text(hjust = 0.5, size = 16)) +
+  #ggtitle("Air temperature (1 h)") +
+        scale_x_datetime(breaks = scales::date_breaks("30 mins"), date_labels = "%H:%M")+
+        ylab("% active")
+
+ggsave(file="AirTemp.png", at, width=10, height=3, dpi=300)
+
 
 # Statistical analysis ----------------------------------------------------
 ##Multiple linear regression----
@@ -613,3 +787,4 @@ ggplot(data=probdf, aes(fill=Condition, y=Level, x=Group, pattern = Condition,
                                "#d9d289", "#d67860", "#4b5e96")) +
   scale_pattern_manual(values=c('stripe', 'none')) +
   scale_pattern_type_manual(values=c(NA, NA))
+
