@@ -27,7 +27,8 @@ names(dfweather) [5] <- "Precipitation"
 names(dfweather) [6] <- "AirTemp"
 names(dfweather) [7] <- "MeanWindSpeed"
 
-activitycycle$Time <- as.POSIXct(activitycycle$Time, "%d.%m.%Y %H:%M", tz = "UTC")
+names(activitycycle) [1] <- "date_time"
+activitycycle$date_time <- as.POSIXct(activitycycle$date_time, "%d.%m.%Y %H:%M", tz = "UTC")
 
 # Filtering and subsetting data -------------------------------------------
 ##Filt. by sex----
@@ -703,7 +704,7 @@ ggplot(data=probdf, aes(x= reorder(Activity, -probability), y=probability,
 #Showing more than one group for the same period would also say something about the
 #synchrony between the groups.
 
-ac <- ggplot(activitycycle, mapping = aes(x=Time, y=Active)) +
+ac <- ggplot(activitycycle, mapping = aes(x=date_time, y=Active)) +
   geom_line(color="#6bb0c7", size=0.8) +
   theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
         axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
@@ -720,7 +721,7 @@ ac <- ggplot(activitycycle, mapping = aes(x=Time, y=Active)) +
         scale_x_datetime(breaks = scales::date_breaks("30 mins"), date_labels = "%H:%M")+
         ylab("% active")
 
-ggsave(file="AirTemp.png", at, width=10, height=3, dpi=300)
+ggsave(file="ActivityCycle.png", ac, width=10, height=3, dpi=300)
 
 
 # Statistical analysis ----------------------------------------------------
