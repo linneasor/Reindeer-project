@@ -10,7 +10,7 @@ library(irr)
 
 df <- read.csv("Data/Scan_sampling_data_2022.csv")
 dfweather <- read.csv("Data/Weather_data_per_hour_2022.csv")
-activitycycle <- read.csv("Data/activity_31.csv")
+activitycycle <- read.csv("Data/herds 4 & 3 6 hours.csv")
 
 
 # Date/time formatting ----------------------------------------------------
@@ -248,15 +248,13 @@ percenthourlydf <- hourlydf %>%
   ungroup()
 
 probdf <- data.frame(Activity = c("Foraging", "Resting", "Ruminating",
-                                "Walking", "Displaying", "Other",
-                                "Active", "Inactive"),
+                                "Walking", "Displaying", "Other"),
                    probability = c(0.535363, 0.2667447,
                                    0.1473068,
                                    0.03606557,
                                    0.006088993,
-                                   0.008430913,
-                                   0.5859485,
-                                   0.4140515))
+                                   0.008430913))
+
 #TP1 data
 sumTotalIndividualstp1df <- hourlytp1df %>%
   summarise(`sum(TotalIndividuals)` = sum(TotalIndividuals))
@@ -319,16 +317,14 @@ percenthourlyfemaledf <- hourlyfemaledf %>%
   ungroup()
 
 probfemaledf <- data.frame(Activity = c("Foraging", "Resting", "Ruminating",
-                                        "Walking", "Displaying", "Other",
-                                        "Active", "Inactive"),
+                                        "Walking", "Displaying", "Other"),
                      probability = c(0.5458763,
                                      0.2340206,
                                      0.1639175,
                                      0.03298969,
                                      0.01340206,
-                                     0.009793814,
-                                     0.2735363,
-                                     0.1807963))
+                                     0.009793814))
+
 #Male data
 sumTotalIndividualsmaledf <- hourlymaledf %>%
   summarise(`sum(TotalIndividuals)` = sum(TotalIndividuals))
@@ -345,14 +341,14 @@ percenthourlymaledf <- hourlymaledf %>%
   ungroup()
 
 probmaledf <- data.frame(Activity = c("Foraging", "Resting", "Ruminating",
-                                      "Walking", "Displaying", "Other",
-                                      "Active", "Inactive"),
+                                      "Walking", "Displaying", "Other"),
                      probability = c(0.4301221,
                                      0.3527815,
                                      0.1628223,
                                      0.04748982,
                                      0,
-                                     0.006784261))
+                                     0.00117096))
+
 #Calf/yearling data
 sumTotalIndividualsotherdf <- hourlyotherdf %>%
   summarise(`sum(TotalIndividuals)` = sum(TotalIndividuals))
@@ -369,36 +365,13 @@ percenthourlyotherdf <- hourlyotherdf %>%
   ungroup()
 
 probotherdf <- data.frame(Activity = c("Foraging", "Resting", "Ruminating",
-                                       "Walking", "Displaying", "Other",
-                                       "Active", "Inactive"),
+                                       "Walking", "Displaying", "Other"),
                      probability = c(0.5712492,
                                      0.2667922,
                                      0.1198996,
                                      0.03452605,
                                      0,
-                                     0.007532957))
-
-##Grouping activity data----
-
-FrExDa <- FrExDa %>% mutate(Løsning=recode(Løsning, A="Guro",B="Marie",C="Hanne",D="Linn",E="Anne",Ff="-Frida"),
-                            Frass = recode(Frass, UF = "Uten frass", MF = "Med frass"))
-
-df2 <- df2 %>% mutate(Sex=recode(Sex, 0="Female", 1="Male",99="Calf/yearling"))
-
-# specify the order in which you want your new treatment names to appear in your graphs
-loslevels <- c("Guro", "Marie", "Hanne", "Linn","Anne","Frida")
-frasslevels <- c("Uten frass","Med frass")
-FrExDa$Losning<-factor(FrExDa$Losning, levels = loslevels)
-FrExDa$Frass<-factor(FrExDa$Frass, levels = frasslevels)
-
-
-
-df %>%
-  group_by(genre)
-
-Activity = c("Foraging", "Resting", "Ruminating",
-            "Walking", "Displaying", "Other")
-Groups = c("Female", "Male", "Calf/yearling", "Total")
+                                     0.002810304))
 
 # Calculating mean weather ------------------------------------------------
 #Mean weather + standard deviation (should be set to only include 19.03-05.05)
@@ -704,6 +677,7 @@ ggplot(data=probdf, aes(x= reorder(Activity, -probability), y=probability,
 #Showing more than one group for the same period would also say something about the
 #synchrony between the groups.
 
+#One group
 ac <- ggplot(activitycycle, mapping = aes(x=date_time, y=Active)) +
   geom_line(color="#6bb0c7", size=0.8) +
   theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
@@ -722,6 +696,26 @@ ac <- ggplot(activitycycle, mapping = aes(x=date_time, y=Active)) +
         ylab("% active")
 
 ggsave(file="ActivityCycle.png", ac, width=10, height=3, dpi=300)
+
+#Two groups
+ac2 <- ggplot(activitycycle, mapping = aes(x=date_time, y=Herd.3)) +
+  geom_line(color="#6bb0c7", size=0.8) +
+  theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.title.x=element_blank(),
+        axis.title.y=element_text(size = 13),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        aspect.ratio = 0.25,
+        plot.title = element_text(hjust = 0.5, size = 16)) +
+  ggtitle("Group 3") +
+  scale_x_datetime(breaks = scales::date_breaks("30 mins"), date_labels = "%H:%M")+
+  ylab("% active")
+
+ggsave(file="ActivityCycle2.png", ac, width=10, height=3, dpi=300)
 
 
 # Statistical analysis ----------------------------------------------------
@@ -754,8 +748,11 @@ m7 <- lm(TotalRuminating~Precipitation+AirTemp
 
 summary(m7)
 
+#Total walking
+m8 <- lm(TotalWalking~Precipitation+AirTemp
+         +MeanWindSpeed, data=hourlydf)
 
-
+summary(m8)
 
 
 #Trying to get striped bars
