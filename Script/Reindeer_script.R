@@ -7,6 +7,7 @@ library(dplyr)
 library(lubridate)
 library(RColorBrewer)
 library(irr)
+library(patchwork)
 
 df <- read.csv("Data/Scan_sampling_data_2022.csv")
 dfweather <- read.csv("Data/Weather_data_per_hour_2022.csv")
@@ -698,7 +699,7 @@ ac <- ggplot(activitycycle, mapping = aes(x=date_time, y=Active)) +
 ggsave(file="ActivityCycle.png", ac, width=10, height=3, dpi=300)
 
 #Two groups
-ac2 <- ggplot(activitycycle, mapping = aes(x=date_time, y=Herd.3)) +
+ac3 <- ggplot(activitycycle, mapping = aes(x=date_time, y=Herd.3)) +
   geom_line(color="#6bb0c7", size=0.8) +
   theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
         axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
@@ -715,7 +716,26 @@ ac2 <- ggplot(activitycycle, mapping = aes(x=date_time, y=Herd.3)) +
   scale_x_datetime(breaks = scales::date_breaks("30 mins"), date_labels = "%H:%M")+
   ylab("% active")
 
-ggsave(file="ActivityCycle2.png", ac, width=10, height=3, dpi=300)
+ac4 <- ggplot(activitycycle, mapping = aes(x=date_time, y=Herd.4)) +
+  geom_line(color="#6bb0c7", size=0.8) +
+  theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'),
+        axis.title.x=element_blank(),
+        axis.title.y=element_text(size = 13),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        aspect.ratio = 0.25,
+        plot.title = element_text(hjust = 0.5, size = 16)) +
+  ggtitle("Group 4") +
+  scale_x_datetime(breaks = scales::date_breaks("30 mins"), date_labels = "%H:%M")+
+  ylab("% active")
+
+ac3 / ac4
+
+ggsave(file="ActivityCycle Combined.png", ac3 / ac4, width=10, height=10, dpi=300)
 
 
 # Statistical analysis ----------------------------------------------------
